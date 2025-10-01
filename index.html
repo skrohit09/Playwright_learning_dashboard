@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playwright SDET Learning Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .progress-section {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 2em;
+            font-weight: bold;
+            color: #4facfe;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #4facfe;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .category {
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .category-header {
+            background: #f8f9fa;
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .category-header:hover {
+            background: #e9ecef;
+        }
+
+        .category-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .category-progress {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .category-content {
+            display: none;
+            padding: 20px;
+            background: white;
+        }
+
+        .category-content.active {
+            display: block;
+        }
+
+        .topic {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.3s ease;
+        }
+
+        .topic:hover {
+            background: #f8f9fa;
+        }
+
+        .topic:last-child {
+            border-bottom: none;
+        }
+
+        .topic-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+
+        .topic-text {
+            flex: 1;
+            font-size: 1em;
+            color: #333;
+        }
+
+        .topic.completed .topic-text {
+            text-decoration: line-through;
+            color: #28a745;
+        }
+
+        .completion-date {
+            font-size: 0.8em;
+            color: #666;
+            margin-left: 10px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: #28a745;
+            color: white;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #importFile {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .stats {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 Playwright SDET Learning Dashboard</h1>
+            <p>Master Playwright test automation with comprehensive learning path</p>
+        </div>
+
+        <div class="progress-section">
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-number" id="completedCount">0</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="totalCount">0</span>
+                    <span class="stat-label">Total Topics</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="progressPercent">0%</span>
+                    <span class="stat-label">Progress</span>
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 10px;">
+                <small id="lastUpdated">Progress will be saved automatically</small>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="exportProgress()">📤 Export Progress</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 Import Progress</button>
+            <button class="btn btn-secondary" onclick="clearProgress()">🗑️ Clear All</button>
+            <input type="file" id="importFile" accept=".json" onchange="importProgress(event)">
+        </div>
+
+        <div class="content" id="categoriesContainer">
+            <!-- Categories will be loaded here -->
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Learning data structure
+        const learningData = {
+            categories: [
+                {
+                    id: "javascript-fundamentals",
+                    name: "JavaScript Fundamentals for Test Automation",
+                    description: "Essential JavaScript concepts needed for Playwright automation",
+                    topics: [
+                        "Variables and Data Types",
+                        "Functions and Arrow Functions", 
+                        "Objects and Arrays",
+                        "Conditional Statements and Loops",
+                        "Async/Await and Promises",
+                        "Callbacks and Event Handling",
+                        "ES6+ Features (Destructuring, Spread, etc.)",
+                        "JavaScript Modules (import/export)",
+                        "Error Handling with try/catch",
+                        "JSON Parsing and Manipulation"
+                    ]
+                },
+                {
+                    id: "playwright-basics",
+                    name: "Playwright Basics & Installation",
+                    description: "Getting started with Playwright framework",
+                    topics: [
+                        "What is Playwright and its Architecture",
+                        "Playwright vs Selenium vs Cypress Comparison",
+                        "Node.js and npm Installation",
+                        "Playwright Installation and Setup",
+                        "Creating First Playwright Project",
+                        "Understanding playwright.config.ts",
+                        "Browser Context and Page Concepts",
+                        "Running Tests in Different Browsers",
+                        "Headless vs Headed Mode",
+                        "Test Runner and CLI Commands"
+                    ]
+                },
+                {
+                    id: "locators-interactions",
+                    name: "Locators & Element Interactions",
+                    description: "Finding and interacting with web elements",
+                    topics: [
+                        "CSS Selectors and XPath",
+                        "Playwright Built-in Locators (getByRole, getByText, etc.)",
+                        "Custom Locators and data-testid",
+                        "Element Visibility and State Checks",
+                        "Click, Type, and Fill Actions",
+                        "Keyboard and Mouse Interactions",
+                        "Element Screenshots and Bounding Box",
+                        "Multiple Elements and Filtering",
+                        "Locator Strategies and Best Practices",
+                        "Debugging Locators with Playwright Inspector"
+                    ]
+                },
+                {
+                    id: "async-waits",
+                    name: "Asynchronous Programming & Waits",
+                    description: "Handling timing and synchronization in tests",
+                    topics: [
+                        "Understanding Async/Await in Tests",
+                        "Auto-waiting Mechanism in Playwright",
+                        "Explicit Waits (waitFor conditions)",
+                        "Network Requests and Response Waiting",
+                        "Page Load and Navigation Waits",
+                        "Element State Waits (visible, hidden, enabled)",
+                        "Custom Wait Conditions",
+                        "Timeout Configuration and Management",
+                        "Handling Dynamic Content",
+                        "Race Conditions and Flaky Tests"
+                    ]
+                },
+                {
+                    id: "ui-components",
+                    name: "UI Components & Complex Interactions",
+                    description: "Handling advanced UI elements and interactions",
+                    topics: [
+                        "Dropdowns and Select Elements",
+                        "Checkboxes and Radio Buttons",
+                        "File Upload and Download",
+                        "Drag and Drop Operations",
+                        "Hover and Context Menu Actions",
+                        "Date Pickers and Calendars",
+                        "Modal Dialogs and Popups",
+                        "Tables and Data Grids",
+                        "Frames and iFrames Handling",
+                        "Shadow DOM Interactions"
+                    ]
+                },
+                {
+                    id: "api-testing",
+                    name: "API Testing with Playwright",
+                    description: "Using Playwright for API automation and mixed scenarios",
+                    topics: [
+                        "Making API Requests with Playwright",
+                        "HTTP Methods (GET, POST, PUT, DELETE)",
+                        "Request Headers and Authentication",
+                        "Response Validation and Assertions",
+                        "JSON and XML Response Parsing",
+                        "API Mocking and Request Interception",
+                        "Network Monitoring and HAR Files",
+                        "Combined UI and API Testing",
+                        "Session Storage and Cookies Management",
+                        "OAuth and Token-based Authentication"
+                    ]
+                },
+                {
+                    id: "framework-design",
+                    name: "Framework Design & Page Object Model",
+                    description: "Creating maintainable and scalable test frameworks",
+                    topics: [
+                        "Page Object Model (POM) Implementation",
+                        "Feature Object Pattern",
+                        "Base Page and Common Methods",
+                        "Test Data Management and Fixtures",
+                        "Configuration Management",
+                        "Custom Assertions and Matchers",
+                        "Utility Functions and Helpers",
+                        "Test Organization and Structure",
+                        "Reusable Components and Actions",
+                        "Framework Architecture Best Practices"
+                    ]
+                },
+                {
+                    id: "visual-testing",
+                    name: "Visual Testing & Screenshots",
+                    description: "Implementing visual regression testing",
+                    topics: [
+                        "Full Page Screenshots",
+                        "Element-specific Screenshots",
+                        "Visual Comparisons and Assertions",
+                        "Cross-browser Visual Testing",
+                        "Mobile Device Screenshots",
+                        "PDF Generation and Testing",
+                        "Video Recording of Tests",
+                        "Visual Regression Setup",
+                        "Screenshot Management and Storage",
+                        "Handling Visual Differences"
+                    ]
+                },
+                {
+                    id: "cicd-integration",
+                    name: "CI/CD Integration",
+                    description: "Integrating Playwright with continuous integration tools",
+                    topics: [
+                        "GitHub Actions Integration",
+                        "Jenkins Pipeline Configuration",
+                        "GitLab CI/CD Setup",
+                        "Azure DevOps Integration",
+                        "Docker Container Testing",
+                        "Parallel Test Execution",
+                        "Test Artifacts and Reports",
+                        "Environment Configuration",
+                        "Cross-platform Testing (Linux, Windows, macOS)",
+                        "Cloud Testing Platforms"
+                    ]
+                },
+                {
+                    id: "advanced-sdet",
+                    name: "Advanced Topics & SDET Skills",
+                    description: "Advanced concepts for SDET professionals",
+                    topics: [
+                        "Performance Testing with Playwright",
+                        "Security Testing Approaches",
+                        "Database Validation and Testing",
+                        "Email Testing and Automation",
+                        "Mobile Web Testing and Emulation",
+                        "Accessibility Testing Integration",
+                        "Load Testing and Stress Testing",
+                        "Test Environment Management",
+                        "Microservices Testing Strategies",
+                        "Test Data Generation and Management"
+                    ]
+                },
+                {
+                    id: "best-practices",
+                    name: "Best Practices & Code Quality",
+                    description: "Professional standards and code quality practices",
+                    topics: [
+                        "Test Code Review Guidelines",
+                        "Naming Conventions and Standards",
+                        "Error Handling and Recovery",
+                        "Test Maintainability Strategies",
+                        "Code Reusability Patterns",
+                        "Performance Optimization",
+                        "Memory Management in Tests",
+                        "Cross-team Collaboration",
+                        "Documentation and Comments",
+                        "Refactoring Test Code"
+                    ]
+                },
+                {
+                    id: "reporting-management",
+                    name: "Reporting & Test Management",
+                    description: "Test reporting, metrics, and management practices",
+                    topics: [
+                        "HTML and Allure Report Generation",
+                        "Custom Reporting Solutions",
+                        "Test Metrics and Analytics",
+                        "Flaky Test Detection and Management",
+                        "Test Coverage Analysis",
+                        "Integration with Test Management Tools",
+                        "Real-time Test Dashboards",
+                        "Failure Analysis and Debugging",
+                        "Test Result Communication",
+                        "Continuous Improvement Processes"
+                    ]
+                }
+            ]
+        };
+
+        // Progress data storage
+        let progressData = {};
+
+        // Initialize the dashboard
+        function initDashboard() {
+            loadProgress();
+            renderCategories();
+            updateStats();
+            updateLastUpdated();
+        }
+
+        // Load progress from localStorage
+        function loadProgress() {
+            try {
+                const saved = localStorage.getItem('playwrightProgress');
+                if (saved) {
+                    progressData = JSON.parse(saved);
+                    showNotification('Progress loaded successfully!');
+                } else {
+                    progressData = { completedTopics: {}, lastUpdated: new Date().toISOString() };
+                }
+            } catch (error) {
+                console.error('Error loading progress:', error);
+                progressData = { completedTopics: {}, lastUpdated: new Date().toISOString() };
+                showNotification('Error loading progress, starting fresh.', 'error');
+            }
+        }
+
+        // Save progress to localStorage
+        function saveProgress() {
+            try {
+                progressData.lastUpdated = new Date().toISOString();
+                localStorage.setItem('playwrightProgress', JSON.stringify(progressData));
+                updateStats();
+                updateLastUpdated();
+                showNotification('Progress saved!');
+            } catch (error) {
+                console.error('Error saving progress:', error);
+                showNotification('Error saving progress!', 'error');
+            }
+        }
+
+        // Render all categories
+        function renderCategories() {
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = '';
+
+            learningData.categories.forEach(category => {
+                const categoryElement = createCategoryElement(category);
+                container.appendChild(categoryElement);
+            });
+        }
+
+        // Create category element
+        function createCategoryElement(category) {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'category';
+            categoryDiv.innerHTML = `
+                <div class="category-header" onclick="toggleCategory('${category.id}')">
+                    <div>
+                        <div class="category-title">${category.name}</div>
+                        <div style="color: #666; font-size: 0.9em; margin-top: 5px;">${category.description}</div>
+                    </div>
+                    <div class="category-progress" id="progress-${category.id}">
+                        ${getCategoryProgress(category)}
+                    </div>
+                </div>
+                <div class="category-content" id="content-${category.id}">
+                    ${category.topics.map((topic, index) => createTopicElement(category.id, topic, index)).join('')}
+                </div>
+            `;
+            return categoryDiv;
+        }
+
+        // Create topic element
+        function createTopicElement(categoryId, topicName, topicIndex) {
+            const topicKey = `${categoryId}-${topicIndex}`;
+            const isCompleted = progressData.completedTopics[topicKey] || false;
+            const completedDate = progressData.completedTopics[topicKey + '_date'] || '';
+            
+            return `
+                <div class="topic ${isCompleted ? 'completed' : ''}" id="topic-${topicKey}">
+                    <input type="checkbox" class="topic-checkbox" 
+                           ${isCompleted ? 'checked' : ''} 
+                           onchange="toggleTopic('${categoryId}', ${topicIndex})">
+                    <span class="topic-text">${topicName}</span>
+                    ${completedDate ? `<span class="completion-date">Completed: ${new Date(completedDate).toLocaleDateString()}</span>` : ''}
+                </div>
+            `;
+        }
+
+        // Toggle category visibility
+        function toggleCategory(categoryId) {
+            const content = document.getElementById(`content-${categoryId}`);
+            content.classList.toggle('active');
+        }
+
+        // Toggle topic completion
+        function toggleTopic(categoryId, topicIndex) {
+            const topicKey = `${categoryId}-${topicIndex}`;
+            const isCompleted = !progressData.completedTopics[topicKey];
+            
+            progressData.completedTopics[topicKey] = isCompleted;
+            
+            if (isCompleted) {
+                progressData.completedTopics[topicKey + '_date'] = new Date().toISOString();
+            } else {
+                delete progressData.completedTopics[topicKey + '_date'];
+            }
+            
+            saveProgress();
+            
+            // Update UI
+            const topicElement = document.getElementById(`topic-${topicKey}`);
+            if (isCompleted) {
+                topicElement.classList.add('completed');
+            } else {
+                topicElement.classList.remove('completed');
+            }
+            
+            // Update category progress
+            const category = learningData.categories.find(c => c.id === categoryId);
+            document.getElementById(`progress-${categoryId}`).textContent = getCategoryProgress(category);
+        }
+
+        // Get category progress
+        function getCategoryProgress(category) {
+            let completed = 0;
+            category.topics.forEach((_, index) => {
+                const topicKey = `${category.id}-${index}`;
+                if (progressData.completedTopics[topicKey]) {
+                    completed++;
+                }
+            });
+            return `${completed}/${category.topics.length}`;
+        }
+
+        // Update statistics
+        function updateStats() {
+            let totalTopics = 0;
+            let completedTopics = 0;
+
+            learningData.categories.forEach(category => {
+                totalTopics += category.topics.length;
+                category.topics.forEach((_, index) => {
+                    const topicKey = `${category.id}-${index}`;
+                    if (progressData.completedTopics[topicKey]) {
+                        completedTopics++;
+                    }
+                });
+            });
+
+            const percentage = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+
+            document.getElementById('completedCount').textContent = completedTopics;
+            document.getElementById('totalCount').textContent = totalTopics;
+            document.getElementById('progressPercent').textContent = `${percentage}%`;
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+        }
+
+        // Update last updated time
+        function updateLastUpdated() {
+            const lastUpdated = progressData.lastUpdated;
+            if (lastUpdated) {
+                const date = new Date(lastUpdated);
+                document.getElementById('lastUpdated').textContent = 
+                    `Last updated: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+            }
+        }
+
+        // Export progress
+        function exportProgress() {
+            const dataStr = JSON.stringify(progressData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `playwright-progress-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Progress exported successfully!');
+        }
+
+        // Import progress
+        function importProgress(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    progressData = importedData;
+                    saveProgress();
+                    renderCategories();
+                    updateStats();
+                    updateLastUpdated();
+                    showNotification('Progress imported successfully!');
+                } catch (error) {
+                    console.error('Error importing progress:', error);
+                    showNotification('Error importing progress file!', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Clear all progress
+        function clearProgress() {
+            if (confirm('Are you sure you want to clear all progress? This cannot be undone.')) {
+                progressData = { completedTopics: {}, lastUpdated: new Date().toISOString() };
+                saveProgress();
+                renderCategories();
+                updateStats();
+                updateLastUpdated();
+                showNotification('All progress cleared!');
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.background = type === 'error' ? '#dc3545' : '#28a745';
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
